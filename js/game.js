@@ -6,11 +6,19 @@ var gLevel
 
 const BOMB = '💣'
 const FLAG = '🚩'
+const GAME_ON = '🙂'
+const GAME_WON = '😎'
+const GAME_LOST = '🙁'
 
 var gMinesLocations
+var gLocations
 var firstClick
+var elRestertBtn = document.querySelector('.restart')
 
-function onInit() {
+var prevSize = 4 //deafult
+var prevMines = 2 //deafult
+
+function onInit(SIZE = prevSize, MINES = prevMines) {
     gGame = {
         isOn: false,
         revealedCount: 0,
@@ -18,11 +26,16 @@ function onInit() {
         secsPassed: 0
     }
     gLevel = {
-        SIZE: 4,
-        MINES: 2
+        SIZE,
+        MINES
     }
+    elRestertBtn.innerText = GAME_ON
     gMinesLocations = []
+    gLocations = []
     firstClick = true
+
+    prevSize = gLevel.SIZE
+    prevMines = gLevel.MINES
 
     gBoard = buildBoard()
     renderBoard(gBoard)
@@ -39,20 +52,65 @@ function checkGameOver() {
     return true
 }
 
-function expandReveal(board, elCell, i, j) {
-    const rowIdx = i
-    const colIdx = j
+function expandReveal(board, elCell, rowIdx, colIdx) {
+
     for (var i = rowIdx - 1; i <= rowIdx + 1; i++) {
         if (i < 0 || i >= board.length) continue
         for (var j = colIdx - 1; j <= colIdx + 1; j++) {
             if (j < 0 || j >= board[0].length) continue
             if (i === rowIdx && j === colIdx) continue
+
+            // console.log('gBoard[i][j]:', gBoard[i][j])
+
+            const cell = gBoard[i][j]
+            if (cell.isRevealed || cell.isMine) continue
             gBoard[i][j].isRevealed = true
-            elCell.classList.add('revealed')
+            gGame.revealedCount++
+            // console.log('gGame.revealedCount:', gGame.revealedCount)
+            renderCell(i, j)
+
+            if (!gBoard[i][j].minesAroundCount) expandReveal(board, elCell, i, j)
         }
     }
 }
 
+function onCellClicked(elCell, i, j) {
+    if (firstClick) {
+        gBoard = setRandMines(gBoard, { i, j })
+        gBoard = setMinesNegsCount(gBoard)
+        gGame.isOn = true
+        firstClick = false
+    }
+
+    if (!gGame.isOn) return
+    if (gBoard[i][j].isMarked) return
+
+    gBoard[i][j].isRevealed = true
+    elCell.classList.add('revealed')
+
+    if (gBoard[i][j].isMine) {
+        elCell.innerText = BOMB
+        elRestertBtn.innerText = GAME_LOST
+        revealAllBombs()
+        gGame.isOn = false
+        return
+    }
+
+    gGame.revealedCount++
+    console.log(gGame.revealedCount);
+
+    if (gBoard[i][j].minesAroundCount) {
+        elCell.innerText = gBoard[i][j].minesAroundCount
+    } else { // empty space = no mines around
+        expandReveal(gBoard, elCell, i, j)
+    }
+
+    if (checkGameOver()) {
+        gGame.isOn = false
+        console.log('you win!');
+        elRestertBtn.innerText = GAME_WON
+    }
+}
 
 function onCellMarked(elCell, i, j) {
     document.addEventListener('contextmenu', function (e) {
@@ -74,42 +132,15 @@ function onCellMarked(elCell, i, j) {
     if (checkGameOver()) {
         gGame.isOn = false
         console.log('you win!');
-
+        elRestertBtn.innerText = GAME_WON
     }
 }
 
-function onCellClicked(elCell, i, j) {
-    if (firstClick) {
-        //
-        gGame.isOn = true
-        firstClick = false
-    }
-
-    if (!gGame.isOn) return
-    if (gBoard[i][j].isMarked) return
-
-    gBoard[i][j].isRevealed = true
-    elCell.classList.add('revealed')
-
-    if (gBoard[i][j].isMine) {
-        elCell.innerText = BOMB
-        gGame.isOn = false
-        return
-    }
-
-    gGame.revealedCount++
-    console.log(gGame.revealedCount);
-
-    if (gBoard[i][j].minesAroundCount) {
-        elCell.innerText = gBoard[i][j].minesAroundCount
-    } else {
-        expandReveal(gBoard, elCell, i, j)
-    }
-
-    if (checkGameOver()) {
-        gGame.isOn = false
-        console.log('you win!');
-
+function revealAllBombs() {
+    for (var i = 0; i < gMinesLocations.length; i++) {
+        const cell = gMinesLocations[i]
+        console.log('cell.i, cell.j:', cell.i, cell.j)
+        renderCell(cell.i, cell.j)
     }
 }
 
@@ -117,7 +148,7 @@ function buildBoard() {
     console.log("hi");
     const size = gLevel.SIZE
     var board = []
-    var locations = []
+    // var locations = []
     for (var i = 0; i < size; i++) {
         board[i] = []
         for (var j = 0; j < size; j++) {
@@ -127,11 +158,9 @@ function buildBoard() {
                 isMine: false,
                 isMarked: false
             }
-            locations.push({ i, j })
+            gLocations.push({ i, j })
         }
     }
-    board = setRandMines(board, locations)
-    board = setMinesNegsCount(board)
     console.log(board)
 
     return board
@@ -164,14 +193,20 @@ function countNegsMines(board, rowIdx, colIdx) {
     return countMines
 }
 
-function setRandMines(board, locations) {
-    for (var i = 0; i < gLevel.MINES; i++) {
-        var randIdx = getRandomInt(0, locations.length)
-        var randLocation = locations.splice(randIdx, 1)[0]
+function setRandMines(board, firstClickLoc) {
+    console.log('gMinesLocations:', gMinesLocations)
+    var size = gLevel.MINES
+    for (var i = 0; i < size; i++) {
+        var randIdx = getRandomInt(0, gLocations.length)
+        var randLocation = gLocations.splice(randIdx, 1)[0]
 
+        if (randLocation.i === firstClickLoc.i && randLocation.j === firstClickLoc.j) {
+            size++
+            continue
+        }
         console.log('randLocation:', randLocation)
-        gMinesLocations.push(randLocation)
         board[randLocation.i][randLocation.j].isMine = true
+        gMinesLocations.push(randLocation)
     }
     return board
 }
