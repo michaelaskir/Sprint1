@@ -20,7 +20,6 @@ function renderBoard(board) {
 }
 
 function renderCell(i, j) {
-  // Select the elCell and set the value
   const elCell = document.querySelector(`.cell-${i}-${j}`)
 
 
@@ -30,6 +29,44 @@ function renderCell(i, j) {
     elCell.innerText = gBoard[i][j].minesAroundCount
   }
   elCell.classList.add('revealed')
+}
+
+function unRenderCell(i, j) {
+  const elCell = document.querySelector(`.cell-${i}-${j}`)
+
+  elCell.innerText = ''
+  elCell.classList.remove('revealed')
+}
+
+function renderLives() {
+  const elLives = document.querySelector('.lives')
+  elLives.innerText = LIFE.repeat(gLives)
+}
+
+function renderHints() {
+  const elHints = document.querySelector('.hints')
+  elHints.style.backgroundColor = ''
+
+  elHints.innerText = HINT.repeat(gHints)
+}
+
+function renderTimer() {
+  document.querySelector('.timer span').innerText = gStartTime
+}
+
+function renderCurrBestScore() {
+  const scoreBoard = document.querySelector(".scores")
+
+  var currBestScore = localStorage.getItem(gGameMode)
+  if (!currBestScore) currBestScore = 'not achieved yet'
+
+  scoreBoard.innerText = `Best score for ${gGameMode} difficulity is ${currBestScore}`
+}
+
+function renderSafeCell(i,j) {
+  const elCell = document.querySelector(`.cell-${i}-${j}`)
+
+  elCell.classList.toggle('safe')
 }
 
 

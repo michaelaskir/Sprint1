@@ -13,18 +13,33 @@
 
     <h1>Mines Sweeper</h1>
 
+    <button class="dark switch" onclick="onChangeMode(this)">Dark Mode</button>
+    <div class="timer">Timer: <span>0</span></div>
+
+    <div class="lives"></div>
+
     <table>
         <button class="restart" onclick="onInit()">🙂</button>
         <tbody class="board-container">
 
         </tbody>
     </table>
-
     <div class="difficulties">
         <button onclick="onInit(4,2)">Beginner</button>
-        <button  onclick="onInit(8,14)">Medium</button>
-        <button  onclick="onInit(12,32)">Expert</button>
+        <button onclick="onInit(8,14)">Medium</button>
+        <button onclick="onInit(12,32)">Expert</button>
     </div>
+
+    <div class="special-buttons">
+        <button class="safe-click" onclick="onSafeClick()">Safe Click</button>
+        <button class="undo" onclick="onUndo()">Undo</button>
+        <button class="manually-create" onclick="onManuallyCreate()">Manually Create: <span>Off</span></button>
+
+    </div>
+
+    <div class="hints" onclick="onGetHint()"></div>
+
+    <h3 class="scores"></h3>
 
     <script src="js/utils.js"></script>
     <script src="js/game.js"></script>

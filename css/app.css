@@ -1,7 +1,23 @@
 body {
 	text-align: center;
-	background-color: rgb(255, 255, 255);
-	font-family: monospace;
+	background-color: white;
+	color: black;
+	font-family: Verdana, Geneva, Tahoma, sans-serif;
+}
+
+.dark {
+	background-color: black;
+	color: white;
+}
+
+.switch {
+	position: fixed;
+	right: 5%;
+}
+
+.dark .switch{
+	background-color: white;
+	color: black;
 }
 
 table {
@@ -9,6 +25,10 @@ table {
 	margin-top: 5px;
 	border: 5px solid black;
 	border-collapse: collapse;
+}
+
+button {
+	cursor: pointer;
 }
 
 td {
@@ -25,18 +45,67 @@ td {
 	height: 50px;
 	width: 50px;
 	font-size: 25px;
+
+	margin: auto;
 }
 
-.difficulties button{
+.difficulties button {
 	height: 30px;
 	width: 100px;
 	font-size: 20px;
 	margin: auto;
 	margin-top: 10px;
 	display: inline;
+	border-radius: 10px;
 
+	background-color: white;
 }
 
 .revealed {
 	background-color: rgb(128, 128, 128);
+}
+
+.lives {
+	font-size: 20px;
+	margin-right: 25%;
+	display: block;
+}
+
+.hints {
+	font-size: 25px;
+	margin: auto;
+	margin-top: 15px;
+	display: inline-block;
+	cursor: pointer;
+
+}
+
+.timer {
+	font-size: 20px;
+}
+
+.special-buttons button {
+	margin-top: 10px;
+	height: 50px;
+	width: 150px;
+	border: solid white;
+	border-radius: 10px;
+	box-shadow: 4px 4px 4px 4px rgba(0, 0, 0, 0.1);
+	color: white;
+}
+
+.safe-click {
+	background-color: rgb(144, 207, 226);
+}
+
+.safe{
+	background-color: rgb(144, 207, 226);
+}
+
+.undo {
+	background-color: rgb(253, 177, 76);
+}
+
+.manually-create {
+	background-color: rgb(127, 226, 127);
 }
