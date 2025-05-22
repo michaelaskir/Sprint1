@@ -13,7 +13,6 @@ function renderBoard(board) {
     }
     strHTML += '</tr>'
   }
-  strHTML += '</tbody></table>'
 
   const elContainer = document.querySelector('.board-container')
   elContainer.innerHTML = strHTML
@@ -50,8 +49,16 @@ function renderHints() {
   elHints.innerText = HINT.repeat(gHints)
 }
 
+function renderMegaHints() {
+  const elBtn = document.querySelector('.mega-hint span')
+
+  elBtn.innerText = gIsMegaHint ? 'On' : 'Off'
+  elBtn.style.color = 'white'
+  if(!gMegaHints.count) elBtn.style.color = 'red'
+}
+
 function renderTimer() {
-  document.querySelector('.timer span').innerText = gStartTime
+  document.querySelector('.timer span').innerText = gGame.secsPassed
 }
 
 function renderCurrBestScore() {
@@ -63,7 +70,7 @@ function renderCurrBestScore() {
   scoreBoard.innerText = `Best score for ${gGameMode} difficulity is ${currBestScore}`
 }
 
-function renderSafeCell(i,j) {
+function renderSafeCell(i, j) {
   const elCell = document.querySelector(`.cell-${i}-${j}`)
 
   elCell.classList.toggle('safe')

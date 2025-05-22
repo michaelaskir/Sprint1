@@ -25,7 +25,6 @@ var prevSize = 4 //deafult
 var prevMines = 2 //deafult
 
 var gTimerInterval
-var gStartTime
 
 var gGameMode
 
@@ -34,7 +33,9 @@ var isDark
 var lastClicks
 
 var gIsManuallyCreate
-var gManuallMinesLoc
+
+var gIsMegaHint
+var gMegaHints
 
 function onInit(SIZE = prevSize, MINES = prevMines) {
     gGame = {
@@ -61,7 +62,6 @@ function onInit(SIZE = prevSize, MINES = prevMines) {
     prevSize = gLevel.SIZE
     prevMines = gLevel.MINES
 
-    gStartTime = 0
     stopTimer()
     renderTimer()
 
@@ -73,7 +73,13 @@ function onInit(SIZE = prevSize, MINES = prevMines) {
     lastClicks = []
 
     gIsManuallyCreate = false
-    gManuallMinesLoc = []
+    gIsMegaHint = false
+    gMegaHints = {
+        count: 1,
+        firstClickLoc: {},
+        secondClickLoc: {}
+    }
+    renderMegaHints()
 
     gBoard = buildBoard()
     renderBoard(gBoard)
@@ -85,14 +91,9 @@ function checkGameOver() {
 
     for (var i = 0; i < gMinesLocations.length; i++) {
 
-        if (gManuallMinesLoc.length) {
-            var cell = gBoard[gManuallMinesLoc[i].i][gManuallMinesLoc[i].j]
-            if (!cell.isMarked) return false
-        } else {
-            var cell = gBoard[gMinesLocations[i].i][gMinesLocations[i].j]
-            if (!cell.isMarked) return false
 
-        }
+        var cell = gBoard[gMinesLocations[i].i][gMinesLocations[i].j]
+        if (!cell.isMarked) return false
     }
     return true
 }
@@ -129,23 +130,32 @@ function expandReveal(board, rowIdx, colIdx) {
 
 function onCellClicked(elCell, i, j) {
     if (firstClick) {
-        if (gIsManuallyCreate) return gManuallMinesLoc.push({ i, j })
         if (gIsHint) return
-        else {
 
-            if (gManuallMinesLoc.length) {
-                gLevel.MINES = gManuallMinesLoc.length
-                manuallySetRandMines()
-            } else {
-                setRandMines({ i, j })
-            }
-            setMinesNegsCount(gBoard)
+        if (gIsManuallyCreate) {
+            if (isMineAlreadyPlaced(i, j)) return
 
-            gGame.isOn = true
-            firstClick = false
+            gMinesLocations.push({ i, j })
+            gBoard[i][j].isMine = true
+            gLevel.MINES = gMinesLocations.length
 
-            startTimer()
+            elCell.classList.add('manuall-mine')
+            setTimeout(() => {
+                elCell.classList.remove('manuall-mine')
+            }, 500);
+
+            return
         }
+        else if (!gMinesLocations.length) { // only if no manuall bombs selected
+            setRandMines({ i, j })
+        }
+        setMinesNegsCount(gBoard)
+
+
+        gGame.isOn = true
+        firstClick = false
+
+        startTimer()
     }
 
     if (!gGame.isOn) return
@@ -156,6 +166,12 @@ function onCellClicked(elCell, i, j) {
         tempExpandReveal(gBoard, i, j)
         gIsHint = false
         renderHints()
+        return
+    }
+
+    if (gIsMegaHint && gMegaHints.count) {
+        megaTempExpandReveal(gBoard, i, j)
+        gIsMegaHint
         return
     }
 
@@ -247,7 +263,7 @@ function onSafeClick() {
     while (gBoard[randLocation.i][randLocation.j].isRevealed || gBoard[randLocation.i][randLocation.j].isMine) {
         var randIdx = getRandomInt(0, gLocations.length)
         var randLocation = gLocations.splice(randIdx, 1)[0]
-        
+
         if (!gLocations.length) return
     }
 
@@ -262,14 +278,18 @@ function onUndo() {
     if (!lastClicks.length) return
 
     var lastClick = lastClicks.pop()
+    console.log('lastClicks:', lastClicks)
     console.log('lastClick:', lastClick)
     const cell = gBoard[lastClick.i][lastClick.j]
-    // const elCell = lastClick.elCell
 
     if (cell.isMine) {
         gLives++
         renderLives()
-    } else if (cell.minesAroundCount) {
+        return
+    }
+    if (!cell.isRevealed || !lastClick) return
+
+    if (cell.minesAroundCount) {
         cell.isRevealed = false
         gGame.revealedCount--
         unRenderCell(lastClick.i, lastClick.j)
@@ -277,11 +297,22 @@ function onUndo() {
 }
 
 function onManuallyCreate() {
-    if (gGame.isOn || gStartTime) return // only on start of the game
+    if (gGame.isOn || gGame.secsPassed) return // only on start of the game
 
     gIsManuallyCreate = !gIsManuallyCreate
     const elBtn = document.querySelector('.manually-create span')
     elBtn.innerText = gIsManuallyCreate ? 'On' : 'Off'
+}
+
+function onMegaHint() {
+    console.log('hi');
+    if (!gGame.isOn || !gMegaHints.count) return // only on start of the game
+
+    gIsMegaHint = !gIsMegaHint
+
+
+    renderMegaHints()
+
 }
 
 function undoExpandReveal(board, rowIdx, colIdx) {
@@ -344,6 +375,44 @@ function tempExpandReveal(board, rowIdx, colIdx) {
     }, 1500);
 }
 
+function megaTempExpandReveal(board, rowIdx, colIdx) {
+
+    if (gMegaHints.firstClickLoc.i === undefined && gMegaHints.firstClickLoc.j === undefined) {
+        gMegaHints.firstClickLoc = { i: rowIdx, j: colIdx }
+        return
+    }
+    gMegaHints.count--
+    gMegaHints.secondClickLoc = { i: rowIdx, j: colIdx }
+
+    const firstCell = gMegaHints.firstClickLoc
+    const secondCell = gMegaHints.secondClickLoc
+
+    const firstRow = Math.min(firstCell.i, secondCell.i)
+    const lastRow = Math.max(firstCell.i, secondCell.i)
+    const firstCol = Math.min(firstCell.j, secondCell.j)
+    const lastCol = Math.max(firstCell.j, secondCell.j)
+
+    for (var i = firstRow; i < lastRow + 1; i++) {
+        for (var j = firstCol; j < lastCol + 1; j++) {
+            if (board[i][j].isRevealed) continue
+            renderCell(i, j)
+        }
+    }
+
+    setTimeout(() => {
+        for (var i = firstRow; i < lastRow + 1; i++) {
+            for (var j = firstCol; j < lastCol + 1; j++) {
+                if (board[i][j].isRevealed) continue
+                unRenderCell(i, j)
+            }
+        }
+
+        gIsMegaHint = false
+        renderMegaHints()
+    }, 2000);
+
+}
+
 function revealAllBombs() {
     for (var i = 0; i < gMinesLocations.length; i++) {
         const cell = gMinesLocations[i]
@@ -363,8 +432,8 @@ function checkBestScore() {
         // if (!currBestScore) currBestScore = 'wasnt achieved yet'
 
 
-        if (!currBestScore || gStartTime < currBestScore) {
-            localStorage.setItem(gGameMode, gStartTime)
+        if (!currBestScore || gGame.secsPassed < currBestScore) {
+            localStorage.setItem(gGameMode, gGame.secsPassed)
         }
     }
     renderCurrBestScore()
@@ -386,7 +455,7 @@ function startTimer() {
 }
 
 function updatedTimer() {
-    gStartTime++
+    gGame.secsPassed++
     renderTimer()
 }
 
@@ -444,7 +513,6 @@ function countNegsMines(board, rowIdx, colIdx) {
 }
 
 function setRandMines(firstClickLoc) {
-    // console.log('gMinesLocations:', gMinesLocations)
     var size = gLevel.MINES
     for (var i = 0; i < size; i++) {
         var randIdx = getRandomInt(0, gLocations.length)
@@ -460,16 +528,12 @@ function setRandMines(firstClickLoc) {
     }
 }
 
-function manuallySetRandMines() {
-
-    for (var i = 0; i < gManuallMinesLoc.length; i++) {
-
-        // const cell = gBoard[gManuallMinesLoc[i].i][gManuallMinesLoc[i].j]
-        var manuallMine = gBoard[gManuallMinesLoc[i].i][gManuallMinesLoc[i].j]
-        gBoard[gManuallMinesLoc[i].i][gManuallMinesLoc[i].j].isMine = true
-        //    cell.isMine = true
-
-        gMinesLocations.push(manuallMine)
+function isMineAlreadyPlaced(iIdx, jIdx) {
+    for (var i = 0; i < gMinesLocations.length; i++) {
+        const cell = gMinesLocations[i]
+        if (cell.i === iIdx && cell.j === jIdx) return true
     }
+    return false
 }
+
 
